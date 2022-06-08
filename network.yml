@@ -1,0 +1,54 @@
+Description: Udagram IAC
+Parameters:
+  EnvironmentName:
+    Type: String
+    Default: Udagram
+  VpcCidr:
+    Type: String
+  Priv1SubnetCidr:
+    Type: String
+  Priv2SubnetCidr:
+    Type: String
+
+Resources:
+  UVPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: !Ref VpcCidr
+      EnableDnsHostnames: true
+      Tags:
+        - Key: Name
+          Value:  !Sub ${EnvironmentName}-VPC
+  IGW:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName}-IGW
+  IGWAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref UVPC
+      GatewayId: !Ref IGW
+
+
+  PrivateSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref UVPC
+      CidrBlock: !Ref Priv1SubnetCidr
+      AvailabilityZone: !Select [0, !GetAZs '']
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName}-UVPC-Priv-Sub1
+  PrivateSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref UVPC
+      CidrBlock: !Ref Priv2SubnetCidr
+      AvailabilityZone: !Select [1, !GetAZs '']
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName}-UVPC-Priv-Sub2
