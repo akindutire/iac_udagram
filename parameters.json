@@ -1,0 +1,18 @@
+[
+    {
+        "ParameterKey" : "EnvironmentName",
+        "ParamenterValue" : "Udagram"
+    },
+    {
+        "ParameterKey" : "VpcCidr",
+        "ParamenterValue" : "10.0.0.0/16"
+    },
+    {
+        "ParameterKey" : "Priv1SubnetCidr",
+        "ParamenterValue" : "10.0.0.0/24"
+    },
+    {
+        "ParameterKey" : "Priv2SubnetCidr",
+        "ParamenterValue" : "10.0.1.0/24"
+    }
+]
