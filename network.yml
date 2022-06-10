@@ -9,6 +9,12 @@ Parameters:
     Type: String
   Priv2SubnetCidr:
     Type: String
+  Pub1SubnetCidr:
+    Type: String
+  Pub2SubnetCidr:
+    Type: String
+  Anywhere:
+    Type: String
 
 Resources:
   UVPC:
@@ -19,6 +25,7 @@ Resources:
       Tags:
         - Key: Name
           Value:  !Sub ${EnvironmentName}-VPC
+
   IGW:
     Type: AWS::EC2::InternetGateway
     Properties:
@@ -29,8 +36,23 @@ Resources:
     Type: AWS::EC2::VPCGatewayAttachment
     Properties:
       VpcId: !Ref UVPC
-      GatewayId: !Ref IGW
-
+      InternetGatewayId: !Ref IGW
+  EIP1:
+    Type: AWS::EC2::EIP
+    DependsOn: IGWAttachment
+    Properties:
+      Domain: vpc
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName}-EIP1
+  EIP2:
+    Type: AWS::EC2::EIP
+    DependsOn: IGWAttachment
+    Properties:
+      Domain: vpc
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName}-EIP2
 
   PrivateSubnet1:
     Type: AWS::EC2::Subnet
@@ -42,6 +64,17 @@ Resources:
       Tags:
         - Key: Name
           Value: !Sub ${EnvironmentName}-UVPC-Priv-Sub1
+  PublicSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref UVPC
+      CidrBlock: !Ref Pub1SubnetCidr
+      AvailabilityZone: !Select [0, !GetAZs '']
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName}-UVPC-Pub-Sub1
+
   PrivateSubnet2:
     Type: AWS::EC2::Subnet
     Properties:
@@ -52,3 +85,157 @@ Resources:
       Tags:
         - Key: Name
           Value: !Sub ${EnvironmentName}-UVPC-Priv-Sub2
+  PublicSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref UVPC
+      CidrBlock: !Ref Pub2SubnetCidr
+      AvailabilityZone: !Select [1, !GetAZs '']
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName}-UVPC-Pub-Sub2
+
+  NAT1:
+    Type: AWS::EC2::NatGateway
+    DependsOn: EIP1
+    Properties:
+      AllocationId: !GetAtt EIP1.AllocationId
+      SubnetId: !Ref PublicSubnet1
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName}-NAT1
+  NAT2:
+    Type: AWS::EC2::NatGateway
+    DependsOn: EIP2
+    Properties:
+      AllocationId: !GetAtt EIP2.AllocationId
+      SubnetId: !Ref PublicSubnet2
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName}-NAT2
+
+
+  RT1:
+    Type: AWS::EC2::RouteTable
+    DependsOn: IGW
+    Properties:
+      VpcId: !Ref UVPC
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName}-UVPC-RT1   
+  RT2:
+    Type: AWS::EC2::RouteTable
+    DependsOn: IGW
+    Properties:
+      VpcId: !Ref UVPC
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName}-UVPC-RT2
+  RT3:
+    Type: AWS::EC2::RouteTable
+    DependsOn: IGW
+    Properties:
+      VpcId: !Ref UVPC
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName}-UVPC-RT3
+
+  R1:
+    Type: AWS::EC2::Route
+    DependsOn: RT1
+    Properties: 
+      DestinationCidrBlock: !Ref Anywhere
+      GatewayId: !Ref IGW
+      RouteTableId: !Ref RT1
+
+  R2:
+    Type: AWS::EC2::Route
+    DependsOn: RT2
+    Properties: 
+      DestinationCidrBlock: !Ref Anywhere
+      NatGatewayId: !Ref NAT1
+      RouteTableId: !Ref RT2
+  R3:
+    Type: AWS::EC2::Route
+    DependsOn: RT3
+    Properties: 
+      DestinationCidrBlock: !Ref Anywhere
+      NatGatewayId: !Ref NAT2
+      RouteTableId: !Ref RT3
+
+  #Associate RT with Subnets
+  PubSub1RTAssoc:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref RT1
+      SubnetId: !Ref PublicSubnet1
+  PubSub2RTAssoc:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref RT1
+      SubnetId: !Ref PublicSubnet2
+
+  PrivSub1RTAssoc:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref RT2
+      SubnetId: !Ref PrivateSubnet1
+  PrivSub2RTAssoc:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref RT3
+      SubnetId: !Ref PrivateSubnet2
+
+      
+Outputs:
+  UVPCID:
+    Value: !Ref UVPC
+    Export:
+      Name: !Sub ${EnvironmentName}-VPCID
+
+  VPCNets:
+    Value: !Join [',', [!Ref PublicSubnet1, !Ref PublicSubnet2, !Ref PrivateSubnet1, !Ref PrivateSubnet2]]
+    Export:
+      Name: !Sub ${EnvironmentName}-Nets
+  VPCPublicSubNets:
+    Value: !Join [',', [!Ref PublicSubnet1, !Ref PublicSubnet2]]
+    Export:
+      Name: !Sub ${EnvironmentName}-Pub-Nets
+  VPCPrivSubNets:
+    Value: !Join [',', [!Ref PrivateSubnet1, !Ref PrivateSubnet2]]
+    Export:
+      Name: !Sub ${EnvironmentName}-Priv-Nets
+  
+  PublicSubnet1:
+    Value: !Ref PublicSubnet1
+    Export:
+      Name: !Sub ${EnvironmentName}-Pub-Net1
+  PublicSubnet2:
+    Value: !Ref PublicSubnet2
+    Export:
+      Name: !Sub ${EnvironmentName}-Pub-Net2
+
+  PrivateSubnet1:
+    Value: !Ref PrivateSubnet1
+    Export:
+      Name: !Sub ${EnvironmentName}-Priv-Net1
+  PrivateSubnet2:
+    Value: !Ref PrivateSubnet2
+    Export:
+      Name: !Sub ${EnvironmentName}-Priv-Net2
+
+  VPCPublicRouteTable:
+    Value: !Ref RT1
+    Export:
+      Name: !Sub ${EnvironmentName}-Pub-RT
+
+  VPCPrivRouteTable1:
+    Value: !Ref RT2
+    Export:
+      Name: !Sub ${EnvironmentName}-Priv-RT1
+  VPCPrivRouteTable2:
+    Value: !Ref RT3
+    Export:
+      Name: !Sub ${EnvironmentName}-Priv-RT2
+  

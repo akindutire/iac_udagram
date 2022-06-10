@@ -1,18 +1,30 @@
 [
     {
         "ParameterKey" : "EnvironmentName",
-        "ParamenterValue" : "Udagram"
+        "ParameterValue" : "Udagram"
     },
     {
         "ParameterKey" : "VpcCidr",
-        "ParamenterValue" : "10.0.0.0/16"
+        "ParameterValue" : "10.0.0.0/16"
     },
     {
         "ParameterKey" : "Priv1SubnetCidr",
-        "ParamenterValue" : "10.0.0.0/24"
+        "ParameterValue" : "10.0.0.0/24"
     },
     {
         "ParameterKey" : "Priv2SubnetCidr",
-        "ParamenterValue" : "10.0.1.0/24"
+        "ParameterValue" : "10.0.1.0/24"
+    },
+    {
+        "ParameterKey" : "Pub1SubnetCidr",
+        "ParameterValue" : "10.0.2.0/24"
+    },
+    {
+        "ParameterKey" : "Pub2SubnetCidr",
+        "ParameterValue" : "10.0.3.0/24"
+    },
+    {
+        "ParameterKey" : "Anywhere",
+        "ParameterValue" : "0.0.0.0/0"
     }
 ]
