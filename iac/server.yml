@@ -35,31 +35,6 @@ Resources:
       Tags:
         - Key: Name
           Value: !Sub ${EnvironmentName} LB Sec Group 
-
-  AppSecurityGroup:
-    Type: AWS::EC2::SecurityGroup
-    Properties:
-      GroupName: SGAPP
-      GroupDescription: 'SG for Apps'
-      SecurityGroupEgress:
-        - CidrIp: !Ref Anywhere
-          IpProtocol: tcp
-          FromPort: 0
-          ToPort: 65535
-      SecurityGroupIngress:
-        - CidrIp: !Ref Anywhere
-          IpProtocol: tcp
-          FromPort: 80
-          ToPort: 80
-        # - CidrIp: !Ref Anywhere
-        #   IpProtocol: tcp
-        #   FromPort: 22
-        #   ToPort: 22
-      VpcId: 
-        Fn::ImportValue: !Sub ${EnvironmentName}-VPCID          
-      Tags:
-        - Key: Name
-          Value: !Sub ${EnvironmentName} LB Sec Group
   
   AppLB:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
@@ -140,6 +115,26 @@ Resources:
       Roles:
         - !Ref RoleForS3
 
+  AppSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: SGAPP
+      GroupDescription: 'SG for Apps'
+      SecurityGroupEgress:
+        - CidrIp: !Ref Anywhere
+          IpProtocol: tcp
+          FromPort: 0
+          ToPort: 65535
+      SecurityGroupIngress:
+        - CidrIp: !Ref Anywhere
+          IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+      VpcId: 
+        Fn::ImportValue: !Sub ${EnvironmentName}-VPCID          
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName} LB Sec Group
   ServerLaunchConfig:
     Type: AWS::AutoScaling::LaunchConfiguration
     Properties:
@@ -155,9 +150,8 @@ Resources:
           - !Ref AppSecurityGroup
         ImageId: 'ami-0dd6adfad4ad37eec'
         InstanceType: t3.medium
-        #KeyName: test
         IamInstanceProfile: !Ref EC2InstanceProfile
-        #AssociatePublicIpAddress: true
+        
         BlockDeviceMappings:
           - DeviceName: '/dev/sdk'
             Ebs:
