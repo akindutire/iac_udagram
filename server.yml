@@ -47,9 +47,14 @@ Resources:
           FromPort: 0
           ToPort: 65535
       SecurityGroupIngress:
-        - IpProtocol: tcp
+        - CidrIp: !Ref Anywhere
+          IpProtocol: tcp
           FromPort: 80
           ToPort: 80
+        - CidrIp: !Ref Anywhere
+          IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
       VpcId: 
         Fn::ImportValue: !Sub ${EnvironmentName}-VPCID          
       Tags:
@@ -141,14 +146,18 @@ Resources:
         UserData:
           Fn::Base64: !Sub |
             #!/bin/bash
-            yum update -y
-            yum install -y httpd
-            systemctl start httpd
+            apt-get update -y
+            apt-get install apache2 -y
+            systemctl start apache2.service
+            cd /var/www/html
+            echo "Udacity Demo Web Server Up and Running!" > index.html
         SecurityGroups:
           - !Ref AppSecurityGroup
         ImageId: 'ami-0dd6adfad4ad37eec'
         InstanceType: t3.medium
-        InstanceProfile: !Ref EC2InstanceProfile
+        #KeyName: test
+        IamInstanceProfile: !Ref EC2InstanceProfile
+        #AssociatePublicIpAddress: true
         BlockDeviceMappings:
           - DeviceName: '/dev/sdk'
             Ebs:
@@ -160,12 +169,12 @@ Resources:
     Properties:
         AutoScalingGroupName: !Sub ${EnvironmentName}-EC2-Group
         VPCZoneIdentifier:
-          - Fn::ImportValue: !Sub ${EnvironmentName}-Pub-Nets
+          - Fn::ImportValue: !Sub ${EnvironmentName}-Priv-Nets
         HealthCheckGracePeriod: 90
         HealthCheckType: ELB
         LaunchConfigurationName: !Ref ServerLaunchConfig 
         MinSize: 4
-        MaxSize: 8
+        MaxSize: 4
         TargetGroupARNs: 
           - !Ref LBTargetGroup1
 
